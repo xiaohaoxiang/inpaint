@@ -9,11 +9,11 @@
 #include <vector>
 #include "defs.hpp"
 
-using P = P2i;
-
 template<typename T = double>
 class Kdtree
 {
+public:
+	using P = P2i;
 private:
 	std::vector<P> S;
 	std::vector<int> lc, rc;
