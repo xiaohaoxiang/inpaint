@@ -1,18 +1,151 @@
-#include <chrono>
+#include <algorithm>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
-#include <unordered_set>
-#include <random>
 #include <opencv2/opencv.hpp>
-#include "defs.hpp"
 #include "bilinear.h"
+#include "evaluate.h"
 #include "fast_marching.h"
+#include "generate.h"
 #include "nearest_neighbor.h"
-#include "kdtree.hpp"
+#include "utils.h"
 #include "RBF.hpp"
 
-int main()
+#define InitMask(MT)                                                                                \
+	do                                                                                              \
+	{                                                                                               \
+		mask##MT[i] = Mask::getMask(sz, MaskType::MT, deg);                                         \
+		dmgv##MT[i] = getDmgv(mask##MT[i]);                                                         \
+		const std::string maskFileName = std::string("mask-") + #MT + "-" + std::to_string(i + 1);  \
+		cv::imwrite(outputDir + #MT + "/" + maskFileName + ".png", mask##MT[i]);                    \
+		outstr << maskFileName << " missing pixels:" << cv::countNonZero(mask##MT[i]) << std::endl; \
+	} while (false)
+
+#define _OutPut(MT)                                                                                  \
+	do                                                                                               \
+	{                                                                                                \
+		cv::imwrite(outputDir + #MT + "/" + PicNameStr + ".png", picRepaired);                       \
+		outstr << PicNameStr << " time:" << t << " MSE:" << MSE(picRepaired, picRaw) << " PSNR:"     \
+			   << PSNR(picRepaired, picRaw) << " MSSIM:" << MSSIM(picRepaired, picRaw) << std::endl; \
+		std::cout << PicNameStr << " finished" << std::endl;                                         \
+	} while (false)
+
+#define _TimingRun1(FuncName, MT, FileName)                                                                           \
+	do                                                                                                                \
+	{                                                                                                                 \
+		clock_t t = clock();                                                                                          \
+		FuncName(picDamaged, picRepaired, dmgv##MT[i]);                                                               \
+		t = clock() - t;                                                                                              \
+		PicNameStr = std::string("repaired-") + #MT + "-" + std::to_string(i + 1) + "-" + #FuncName + "-" + FileName; \
+		_OutPut(MT);                                                                                                  \
+	} while (false)
+
+#define _TimingRun2(FuncName, F, MT, FileName)                                                                                   \
+	do                                                                                                                           \
+	{                                                                                                                            \
+		clock_t t = clock();                                                                                                     \
+		FuncName<F>(picDamaged, picRepaired, dmgv##MT[i]);                                                                       \
+		t = clock() - t;                                                                                                         \
+		PicNameStr = std::string("repaired-") + #MT + "-" + std::to_string(i + 1) + "-" + #FuncName + "-" + #F + "-" + FileName; \
+		_OutPut(MT);                                                                                                             \
+	} while (false)
+
+#define TimingRun(MT, FileName)                                                                                \
+	do                                                                                                         \
+	{                                                                                                          \
+		picRaw.copyTo(picDamaged);                                                                             \
+		doDamage(picDamaged, dmgv##MT[i]);                                                                     \
+		std::string PicNameStr = std::string("damaged-") + #MT + "-" + std::to_string(i + 1) + "-" + FileName; \
+		cv::imwrite(outputDir + #MT + "/" + PicNameStr + ".png", picDamaged);                                  \
+		_TimingRun1(nearestNeighborBfs, MT, FileName);                                                         \
+		_TimingRun1(nearestNeighborRbfs, MT, FileName);                                                        \
+		_TimingRun1(nearestNeighborKd, MT, FileName);                                                          \
+		_TimingRun1(bilinearEquation, MT, FileName);                                                           \
+		_TimingRun1(bilinearKd, MT, FileName);                                                                 \
+		_TimingRun1(fastMarching, MT, FileName);                                                               \
+		_TimingRun2(RBF, Gaussian, MT, FileName);                                                              \
+		_TimingRun2(RBF, InverseQuadratic, MT, FileName);                                                      \
+	} while (false)
+
+void check(std::ostringstream& outstr, std::ofstream& outfile)
 {
-	return 0;
+	outfile << outstr.str() << std::endl;
+	outstr.str(std::string{});
 }
 
+int main(int argc, char* const argv[])
+{
+	std::ostringstream outstr;
+	std::ofstream outfile("data.txt");
+	const std::string picDirs = (argc >= 2 ? argv[1] : "pictures.txt");
+	const std::string outputDir = "output/";
+	const int
+		Rows = (argc >= 4 ? std::max(std::atoi(argv[2]), 300) : 600),
+		Cols = (argc >= 4 ? std::max(std::atoi(argv[3]), 400) : 800),
+		Pixs = Rows * Cols;
+	cv::Size sz(Cols, Rows);
+
+	std::filesystem::create_directory(outputDir);
+	std::filesystem::create_directory(outputDir + "Point");
+	std::filesystem::create_directory(outputDir + "Line");
+	std::filesystem::create_directory(outputDir + "Curve");
+	std::filesystem::create_directory(outputDir + "Text");
+
+	std::vector<P2i> dmgvPoint[9], dmgvLine[9], dmgvCurve[9], dmgvText[1];
+	{
+		cv::Mat_<uchar> maskPoint[9], maskLine[9], maskCurve[9], maskText[1];
+		double k = 0.1;
+		for (int i = 0; i < 9; i++, k += 0.1)
+		{
+			int deg = int(k * Pixs + 0.5);
+			InitMask(Point);
+			InitMask(Line);
+			InitMask(Curve);
+		}
+		for (int i = 0; i < 1; i++)
+		{
+			int deg = 0;
+			InitMask(Text);
+		}
+	}
+	check(outstr, outfile);
+
+	std::string picFileName;
+	std::ifstream picDirStream(picDirs);
+	if (picDirStream.bad())
+		return -1;
+
+	for (; std::getline(picDirStream, picFileName);)
+	{
+		cv::Mat picRaw = cv::imread(picFileName), picDamaged, picRepaired;
+		size_t pa = picFileName.find_last_of('/'), pb = picFileName.find_last_of("\\");
+		if (pa == std::string::npos) pa = 0;
+		if (pb == std::string::npos) pb = 0;
+		std::string picName = picFileName.substr(std::max(pa, pb), picFileName.find_last_of('.'));
+		if (picRaw.empty())
+			continue;
+		if (picRaw.size() != sz)
+			cv::resize(picRaw, picRaw, sz);
+
+		picRaw.copyTo(picDamaged);
+
+		for (int i = 0; i < 9; i++)
+		{
+			TimingRun(Point, picName);
+			check(outstr, outfile);
+			TimingRun(Line, picName);
+			check(outstr, outfile);
+			TimingRun(Curve, picName);
+			check(outstr, outfile);
+		}
+		for (int i = 0; i < 1; i++)
+		{
+			TimingRun(Text, picName);
+			check(outstr, outfile);
+		}
+	}
+	return 0;
+}

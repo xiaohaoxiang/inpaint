@@ -33,7 +33,7 @@ struct InverseMultiquadratic
 };
 
 template<typename Func = Gaussian>
-void RBF(const cv::Mat& src, cv::Mat& dst, const std::vector<P2i>& dmgv, Func func = Func(), const double tolerance = 1E-8)
+void RBF(const cv::Mat& src, cv::Mat& dst, const std::vector<P2i>& dmgv, Func func = Func(), const double tolerance = 1E-4)
 {
 	std::vector<double> tab{ 0 };
 	const int maxR = pow2(src.rows) + pow2(src.cols);

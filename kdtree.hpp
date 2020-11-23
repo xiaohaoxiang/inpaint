@@ -21,7 +21,7 @@ private:
 
 	inline T dist2(const P& a, int b)const
 	{
-		T dx = a.x - S[b].x, dy = a.y - S[b].y;
+		T dx = T(a.x) - S[b].x, dy = T(a.y) - S[b].y;
 		return dx * dx + dy * dy;
 	}
 
@@ -53,8 +53,8 @@ private:
 			avx += S[i].x;
 			avy += S[i].y;
 		}
-		avx /= right - left + 1;
-		avy /= right - left + 1;
+		avx /= double(right) - left + 1;
+		avy /= double(right) - left + 1;
 		for (int i = left; i <= right; i++)
 		{
 			vax += pow2(S[i].x - avx);

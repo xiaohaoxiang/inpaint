@@ -17,10 +17,10 @@ double MSE(const cv::Mat& I1, const cv::Mat& I2)
 
 double PSNR(const cv::Mat& I1, const cv::Mat& I2)
 {
-	return 10.0 * log10(255.0 * 255.0 / MSE(I1, I2));
+    return 10.0 * log10(255.0 * 255.0 / MSE(I1, I2));
 }
 
-double MSSIM(const cv::Mat& i1, const cv::Mat& i2, const double C1, const double C2)
+double MSSIM(const cv::Mat& i1, const cv::Mat& i2, const float C1, const float C2)
 {
     cv::Mat I1, I2;
     i1.convertTo(I1, CV_32F);
@@ -51,12 +51,12 @@ double MSSIM(const cv::Mat& i1, const cv::Mat& i2, const double C1, const double
 
     cv::Mat t1, t2, t3;
 
-    t1 = 2 * mu1_mu2 + C1;
-    t2 = 2 * sigma12 + C2;
+    t1 = 2 * mu1_mu2 + cv::Scalar::all(C1);
+    t2 = 2 * sigma12 + cv::Scalar::all(C2);
     t3 = t1.mul(t2);
 
-    t1 = mu1_2 + mu2_2 + C1;
-    t2 = sigma1_2 + sigma2_2 + C2;
+    t1 = mu1_2 + mu2_2 + cv::Scalar::all(C1);
+    t2 = sigma1_2 + sigma2_2 + cv::Scalar::all(C2);
     t1 = t1.mul(t2);
 
     cv::Mat ssim_map;

@@ -24,6 +24,10 @@ struct P2i :public cv::Point2i
 	{
 		return x < p.x || x == p.x && y < p.y;
 	}
+	double dist2()const
+	{
+		return double(x) * x + double(y) * y;
+	}
 };
 static_assert(sizeof(P2i) == sizeof(size_t), "sizeof(P2i) == sizeof(size_t)");
 
