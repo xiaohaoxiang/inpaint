@@ -62,7 +62,7 @@ void bilinearEquation(const cv::Mat& src, cv::Mat& dst, const std::vector<P2i>& 
 		for (size_t i = 0; i < dmgv.size(); i++)
 		{
 			auto& p = dmgv[i];
-			dst.at<cv::Vec3b>(p.x, p.y)[cc] = uchar(X[i] + 0.5f);
+			dst.at<cv::Vec3b>(p.x, p.y)[cc] = uchar(std::min<float>(X[i] + 0.5f, 255));
 		}
 	}
 }
