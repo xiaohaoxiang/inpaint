@@ -79,20 +79,19 @@ void check(std::ostringstream& outstr, std::ofstream& outfile)
 int main(int argc, char* const argv[])
 {
 	std::ostringstream outstr;
-	std::ofstream outfile("data.txt");
 	const std::string picDirs = (argc >= 2 ? argv[1] : "pictures.txt");
 	const std::string outputDir = "output/";
+    std::filesystem::create_directory(outputDir);
+	std::filesystem::create_directory(outputDir + "Point");
+	std::filesystem::create_directory(outputDir + "Line");
+	std::filesystem::create_directory(outputDir + "Curve");
+	std::filesystem::create_directory(outputDir + "Text");
+    std::ofstream outfile(outputDir + "data.txt");
 	const int
 		Rows = (argc >= 4 ? std::max(std::atoi(argv[2]), 300) : 600),
 		Cols = (argc >= 4 ? std::max(std::atoi(argv[3]), 400) : 800),
 		Pixs = Rows * Cols;
 	cv::Size sz(Cols, Rows);
-
-	std::filesystem::create_directory(outputDir);
-	std::filesystem::create_directory(outputDir + "Point");
-	std::filesystem::create_directory(outputDir + "Line");
-	std::filesystem::create_directory(outputDir + "Curve");
-	std::filesystem::create_directory(outputDir + "Text");
 
 	std::vector<P2i> dmgvPoint[9], dmgvLine[9], dmgvCurve[9], dmgvText[1];
 	{
@@ -121,17 +120,14 @@ int main(int argc, char* const argv[])
 	for (; std::getline(picDirStream, picFileName);)
 	{
 		cv::Mat picRaw = cv::imread(picFileName), picDamaged, picRepaired;
-		size_t pa = picFileName.find_last_of('/'), pb = picFileName.find_last_of("\\");
-		if (pa == std::string::npos) pa = 0;
-		if (pb == std::string::npos) pb = 0;
-		std::string picName = picFileName.substr(std::max(pa, pb), picFileName.find_last_of('.'));
+		std::string picName = picFileName.substr(std::max(picFileName.find_last_of('/') + 1,
+			picFileName.find_last_of("\\") + 1), picFileName.find_last_of('.'));
 		if (picRaw.empty())
 			continue;
 		if (picRaw.size() != sz)
 			cv::resize(picRaw, picRaw, sz);
 
 		picRaw.copyTo(picDamaged);
-
 		for (int i = 0; i < 9; i++)
 		{
 			TimingRun(Point, picName);

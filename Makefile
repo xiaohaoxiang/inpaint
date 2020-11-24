@@ -1,5 +1,12 @@
+DEBUG = false
 CPP = g++
-CFLAGS = -I/usr/include/opencv4 -std=c++17 -O2
+CFLAGS = -I/usr/include/opencv4 -std=c++17
+
+ifeq ($(DEBUG), true)
+CFLAGS += -ggdb3 -O0
+else
+CFLAGS += -O3
+endif
  
 all : inpaint
 .PHONY : all
