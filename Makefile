@@ -5,7 +5,7 @@ CFLAGS = -I/usr/include/opencv4 -std=c++17
 ifeq ($(DEBUG), true)
 CFLAGS += -ggdb3 -O0
 else
-CFLAGS += -O3
+CFLAGS += -O2
 endif
  
 all : inpaint
