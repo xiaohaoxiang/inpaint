@@ -1,5 +1,5 @@
-#include "defs.hpp"
 #include <opencv2/imgproc.hpp>
+#include "defs.hpp"
 
 double MSE(const cv::Mat& I1, const cv::Mat& I2)
 {
