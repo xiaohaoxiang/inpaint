@@ -14,9 +14,9 @@
 #include "utils.h"
 #include "RBF.hpp"
 
-#define InitMask(MT)                                                                                \
-	do                                                                                              \
-	{                                                                                               \
+#define InitMask(MT)                                                                                        \
+	do                                                                                                  \
+	{                                                                                                   \
 		mask##MT[i] = Mask::getMask(sz, MaskType::MT, deg);                                         \
 		dmgv##MT[i] = getDmgv(mask##MT[i]);                                                         \
 		const std::string maskFileName = std::string("mask-") + #MT + "-" + std::to_string(i + 1);  \
@@ -24,18 +24,18 @@
 		outstr << maskFileName << " missing pixels:" << cv::countNonZero(mask##MT[i]) << std::endl; \
 	} while (false)
 
-#define _OutPut(MT)                                                                                  \
-	do                                                                                               \
-	{                                                                                                \
-		cv::imwrite(outputDir + #MT + "/" + curPicName + ".png", picRepaired);                       \
-		outstr << curPicName << " time:" << t << " MSE:" << MSE(picRepaired, picRaw) << " PSNR:"     \
+#define _OutPut(MT)                                                                                              \
+	do                                                                                                       \
+	{                                                                                                        \
+		cv::imwrite(outputDir + #MT + "/" + curPicName + ".png", picRepaired);                           \
+		outstr << curPicName << " time:" << t << " MSE:" << MSE(picRepaired, picRaw) << " PSNR:"         \
 			   << PSNR(picRepaired, picRaw) << " MSSIM:" << MSSIM(picRepaired, picRaw) << std::endl; \
-		std::cout << curPicName << " finished" << std::endl;                                         \
+		std::cout << curPicName << " finished" << std::endl;                                             \
 	} while (false)
 
-#define _TimingRun1(FuncName, MT, FileName)                                                                                             \
-	do                                                                                                                                  \
-	{                                                                                                                                   \
+#define _TimingRun1(FuncName, MT, FileName)                                                                                                     \
+	do                                                                                                                                      \
+	{                                                                                                                                       \
 		clock_t t = clock();                                                                                                            \
 		FuncName(picDamaged, picRepaired, dmgv##MT[i]);                                                                                 \
 		t = clock() - t;                                                                                                                \
@@ -43,9 +43,9 @@
 		_OutPut(MT);                                                                                                                    \
 	} while (false)
 
-#define _TimingRun2(FuncName, F, MT, FileName)                                                                                                     \
-	do                                                                                                                                             \
-	{                                                                                                                                              \
+#define _TimingRun2(FuncName, F, MT, FileName)                                                                                                             \
+	do                                                                                                                                                 \
+	{                                                                                                                                                  \
 		clock_t t = clock();                                                                                                                       \
 		FuncName<F>(picDamaged, picRepaired, dmgv##MT[i]);                                                                                         \
 		t = clock() - t;                                                                                                                           \
@@ -53,9 +53,9 @@
 		_OutPut(MT);                                                                                                                               \
 	} while (false)
 
-#define TimingRun(MT, FileName)                                                     \
-	do                                                                              \
-	{                                                                               \
+#define TimingRun(MT, FileName)                                                             \
+	do                                                                                  \
+	{                                                                                   \
 		picRaw.copyTo(picDamaged);                                                  \
 		doDamage(picDamaged, dmgv##MT[i]);                                          \
 		cv::imwrite(outputDir + #MT + "/damaged-" + FileName + ".png", picDamaged); \
